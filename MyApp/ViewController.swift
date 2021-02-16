@@ -15,9 +15,7 @@ class ViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [self] in
-            startUpdating()
-        }
+        startUpdating()
     }
 
     func startUpdating() {
@@ -25,7 +23,7 @@ class ViewController: UIViewController {
 
         var current = 0
 
-        Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] timer in
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
             current += 1
 
             guard let self = self, current <= 10 else {

@@ -15,6 +15,10 @@ public class ArcView: UIView {
     @IBInspectable
     public var progress: CGFloat = 0 { didSet { updatePaths() } }
 
+    private var arcCenter: CGPoint = .zero
+    private var startAngle: CGFloat = 0
+    private var endAngle: CGFloat = 0
+
     private lazy var currentPositionDotLayer: CALayer = {
         let layer = CALayer()
         layer.backgroundColor = UIColor.white.cgColor
@@ -72,11 +76,34 @@ public class ArcView: UIView {
 
         progress = 0.35
     }
+
+    public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        updateProgress(for: touches.first)
+    }
+
+    public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        updateProgress(for: touches.first)
+    }
+
+    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        updateProgress(for: touches.first)
+    }
 }
 
 // MARK: - Private utility methods
 
 private extension ArcView {
+
+    func updateProgress(for touch: UITouch?) {
+        guard let touch = touch else { return }
+        let point = touch.location(in: self)
+
+        let angle = atan2(point.y - arcCenter.y, point.x - arcCenter.x) + 2 * .pi
+
+        let percent = (angle - startAngle) / (endAngle - startAngle)
+
+        progress = max(0, min(1, percent))
+    }
 
     func configure() {
         layer.addSublayer(totalShapeLayer)
@@ -90,24 +117,29 @@ private extension ArcView {
         let height = rect.height
         let theta = atan(halfWidth / height)
         let radius = sqrt(halfWidth * halfWidth + height * height) / 2 / cos(theta)
-        let center = CGPoint(x: rect.midX, y: rect.minY + radius)
+        arcCenter = CGPoint(x: rect.midX, y: rect.minY + radius)
         let delta = (.pi / 2 - theta) * 2
-        let startAngle = .pi * 3 / 2 - delta
-        let endAngle = .pi * 3 / 2 + delta
+        startAngle = .pi * 3 / 2 - delta
+        endAngle = .pi * 3 / 2 + delta
 
-        let path = UIBezierPath(arcCenter: center,
+        let path = UIBezierPath(arcCenter: arcCenter,
                                 radius: radius,
                                 startAngle: startAngle,
                                 endAngle: endAngle,
                                 clockwise: true)
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
 
         progressShapeLayer.path = path.cgPath // white arc
         totalShapeLayer.path = path.cgPath    // pink arc
         progressShapeLayer.strokeEnd = progress
 
         let currentAngle = (endAngle - startAngle) * progress + startAngle
-        let dotCenter = CGPoint(x: center.x + radius * cos(currentAngle),
-                                y: center.y + radius * sin(currentAngle))
+        let dotCenter = CGPoint(x: arcCenter.x + radius * cos(currentAngle),
+                                y: arcCenter.y + radius * sin(currentAngle))
         currentPositionDotLayer.position = dotCenter
+
+        CATransaction.commit()
     }
 }
